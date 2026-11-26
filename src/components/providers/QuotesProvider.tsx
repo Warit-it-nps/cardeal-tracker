@@ -18,6 +18,7 @@ import { generateShareToken } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 
 const LOCAL_STORAGE_KEY = "cardeal_tracker_quotes_v2";
+const LEGACY_LOCAL_STORAGE_KEY = "cardeal_tracker_quotes_v1";
 const COMPARE_STORAGE_KEY = "cardeal_tracker_compare_ids_v2";
 
 interface QuotesContextValue {
@@ -63,6 +64,60 @@ function isUuid(val: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     val
   );
+}
+
+function hydrateQuoteRecord(q: CarQuoteRecord): CarQuoteRecord {
+  return {
+    ...q,
+    computed: calculateCarQuote(q),
+    downPaymentPercent: calcDownPaymentPercentFromAmount(
+      q.msrp,
+      q.cashDiscount,
+      q.downPaymentAmount
+    ),
+  };
+}
+
+function readLocalQuotes(): CarQuoteRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw =
+      localStorage.getItem(LOCAL_STORAGE_KEY) ||
+      localStorage.getItem(LEGACY_LOCAL_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(hydrateQuoteRecord);
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalQuotes(records: CarQuoteRecord[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(records));
+  } catch (e) {
+    console.error("Failed to persist to localStorage:", e);
+  }
+}
+
+function mergeCloudAndLocalQuotes(
+  cloudQuotes: CarQuoteRecord[],
+  localQuotes: CarQuoteRecord[]
+): CarQuoteRecord[] {
+  const map = new Map<string, CarQuoteRecord>();
+  // ใส่ข้อมูลจาก Cloud ก่อน
+  for (const cq of cloudQuotes) {
+    map.set(cq.id, cq);
+  }
+  // รวมข้อมูลที่บันทึกไว้ในเครื่อง (Local) ที่ยังไม่ได้อยู่ใน Cloud ไม่ให้หายเด็ดขาด
+  for (const lq of localQuotes) {
+    if (!map.has(lq.id)) {
+      map.set(lq.id, lq);
+    }
+  }
+  return Array.from(map.values());
 }
 
 function mapSupabaseRowToRecord(row: Record<string, any>): CarQuoteRecord {
@@ -130,37 +185,115 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
   const [dbError, setDbError] = useState<string | null>(null);
   const isCloudConnected = isSupabaseConfigured();
 
-  const fetchFromSupabase = useCallback(async () => {
+  const syncWithSupabase = useCallback(async (currentUser: User | null) => {
+    const localItems = readLocalQuotes();
     const supabase = createClient();
-    if (!supabase) return false;
+    if (!supabase) {
+      setQuotes(localItems);
+      return false;
+    }
 
+    // 1. หากผู้ใช้ Login แล้ว และมีรายการที่เคยบันทึกไว้ในเครื่อง (Local id: quote-...) ให้ส่งขึ้น Supabase อัตโนมัติ
+    if (currentUser) {
+      const unsyncedLocals = localItems.filter((item) => !isUuid(item.id));
+      for (const item of unsyncedLocals) {
+        const dbPayload: Record<string, any> = {
+          user_id: currentUser.id,
+          brand: item.brand,
+          model: item.model,
+          trim: item.trim,
+          powertrain: item.powertrain,
+          sales_name: item.salesName,
+          showroom: item.showroom,
+          sales_contact: item.salesContact,
+          quote_date: item.quoteDate,
+          status: item.status,
+          note: item.note,
+          msrp: item.msrp,
+          cash_discount: item.cashDiscount,
+          down_payment_subsidy: item.downPaymentSubsidy,
+          down_payment_amount: item.downPaymentAmount,
+          down_payment_percent: item.downPaymentPercent,
+          interest_rate_flat: item.interestRateFlat,
+          installment_months: item.installmentMonths,
+          registration_fee: item.registrationFee,
+          insurance_fee: item.insuranceFee,
+          finance_other_fee: item.financeOtherFee,
+          red_plate_deposit: item.redPlateDeposit,
+          net_car_price: item.computed.netCarPrice,
+          loan_principal: item.computed.loanPrincipal,
+          total_interest: item.computed.totalInterest,
+          monthly_payment: item.computed.monthlyPayment,
+          day_one_cash: item.computed.dayOneCashTotal,
+          total_cash_outflow: item.computed.totalCashOutflow,
+          total_effective_freebies: item.computed.totalEffectiveFreebiesValue,
+          net_effective_cost: item.computed.netEffectiveCost,
+          is_public: item.isPublic,
+          share_sales_contact: item.shareSalesContact,
+          share_token: item.shareToken,
+        };
+
+        const { data: savedRow, error: insertErr } = await supabase
+          .from("car_quotes")
+          .insert(dbPayload)
+          .select()
+          .single();
+
+        if (!insertErr && savedRow) {
+          const newId = String(savedRow.id);
+          if (item.freebies.length > 0) {
+            await supabase.from("quote_freebies").insert(
+              item.freebies.map((f, idx) => ({
+                quote_id: newId,
+                item_name: f.itemName,
+                brand_detail: f.brandDetail,
+                estimated_value: f.estimatedValue,
+                is_included_in_calc: f.isIncludedInCalc,
+                sort_order: idx,
+              }))
+            );
+          }
+          // แทนที่ ID เดิมที่เป็น quote-... ด้วย UUID ที่บันทึกใน Cloud สำเร็จแล้ว
+          item.id = newId;
+          item.userId = currentUser.id;
+        }
+      }
+      writeLocalQuotes(localItems);
+    }
+
+    // 2. ดึงข้อมูลล่าสุดจาก Supabase
     const { data: rows, error } = await supabase
       .from("car_quotes")
       .select("*, quote_freebies(*)")
       .order("created_at", { ascending: false });
 
     if (error) {
-      // แจ้งเตือนกรณีผู้ใช้ยังไม่ได้รันไฟล์ supabase/schema.sql
       if (
         error.code === "42P01" ||
         error.message?.includes("car_quotes") ||
         error.message?.includes("relation")
       ) {
         setDbError(
-          "ยังไม่ได้สร้างตารางในฐานข้อมูล Supabase กรุณานำโค้ดในไฟล์ supabase/schema.sql ไปรันใน Supabase SQL Editor"
+          "ยังไม่ได้สร้างตารางในฐานข้อมูล Supabase กรุณานำโค้ดในไฟล์ supabase/schema.sql ไปรันใน Supabase SQL Editor (ระหว่างนี้ข้อมูลของคุณถูกบันทึกไว้ในเบราว์เซอร์เครื่องนี้เรียบร้อยแล้ว)"
         );
       } else {
         setDbError(error.message);
       }
+      // กรณี DB มีปัญหา ให้แสดงข้อมูลใน LocalStorage ทันที ห้ามทับเป็นค่าว่าง
+      setQuotes(localItems);
       return false;
     }
 
     setDbError(null);
-    const mapped = (rows || []).map(mapSupabaseRowToRecord);
-    setQuotes(mapped);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
-    } catch {}
+    const cloudQuotes = (rows || []).map(mapSupabaseRowToRecord);
+
+    // 3. ผสานข้อมูล Cloud + ข้อมูล Local ที่ยังไม่ได้ซิงค์ เพื่อไม่ให้ข้อมูลที่ผู้ใช้เพิ่งกรอกหายเด็ดขาด
+    const merged = mergeCloudAndLocalQuotes(
+      cloudQuotes,
+      readLocalQuotes()
+    );
+    setQuotes(merged);
+    writeLocalQuotes(merged);
     return true;
   }, []);
 
@@ -169,6 +302,12 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
 
     async function init() {
       try {
+        // โหลดจาก LocalStorage ขึ้นมาแสดงทันทีในเสี้ยววินาทีแรก (ไม่ให้หน้าว่างหรือข้อมูลหาย)
+        const initialLocal = readLocalQuotes();
+        if (mounted && initialLocal.length > 0) {
+          setQuotes(initialLocal);
+        }
+
         const savedCompare = localStorage.getItem(COMPARE_STORAGE_KEY);
         if (savedCompare) {
           const parsedCompare = JSON.parse(savedCompare);
@@ -183,42 +322,26 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
             data: { session },
           } = await supabase.auth.getSession();
 
+          const sessionUser = session?.user ?? null;
           if (mounted) {
-            setUser(session?.user ?? null);
+            setUser(sessionUser);
           }
 
-          await fetchFromSupabase();
+          await syncWithSupabase(sessionUser);
 
           const {
             data: { subscription },
           } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+            const nextUser = newSession?.user ?? null;
             if (mounted) {
-              setUser(newSession?.user ?? null);
-              await fetchFromSupabase();
+              setUser(nextUser);
+              await syncWithSupabase(nextUser);
             }
           });
 
           return () => {
             subscription.unsubscribe();
           };
-        } else {
-          // โหมด Local (ไม่ได้ต่อ Supabase)
-          const savedLocal = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (savedLocal) {
-            const parsed: CarQuoteRecord[] = JSON.parse(savedLocal);
-            if (Array.isArray(parsed)) {
-              const hydrated = parsed.map((q) => ({
-                ...q,
-                computed: calculateCarQuote(q),
-                downPaymentPercent: calcDownPaymentPercentFromAmount(
-                  q.msrp,
-                  q.cashDiscount,
-                  q.downPaymentAmount
-                ),
-              }));
-              if (mounted) setQuotes(hydrated);
-            }
-          }
         }
       } catch (e) {
         console.error("Failed to initialize quotes store:", e);
@@ -231,15 +354,11 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [fetchFromSupabase]);
+  }, [syncWithSupabase]);
 
   const persistLocal = useCallback((nextQuotes: CarQuoteRecord[]) => {
     setQuotes(nextQuotes);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(nextQuotes));
-    } catch (e) {
-      console.error("Failed to persist to localStorage:", e);
-    }
+    writeLocalQuotes(nextQuotes);
   }, []);
 
   const upsertQuote: QuotesContextValue["upsertQuote"] = useCallback(
@@ -252,8 +371,9 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
         computed.effectiveDownPaymentAmount
       );
 
+      const currentList = readLocalQuotes().length > 0 ? readLocalQuotes() : quotes;
       const existing = quoteInput.id
-        ? quotes.find((q) => q.id === quoteInput.id)
+        ? currentList.find((q) => q.id === quoteInput.id)
         : undefined;
 
       const record: CarQuoteRecord = {
@@ -341,8 +461,8 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
       }
 
       const nextQuotes = existing
-        ? quotes.map((q) => (q.id === existing.id ? record : q))
-        : [record, ...quotes];
+        ? currentList.map((q) => (q.id === existing.id ? record : q))
+        : [record, ...currentList];
 
       persistLocal(nextQuotes);
       return record;
@@ -464,6 +584,7 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
     setSelectedCompareIds([]);
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
       localStorage.removeItem(COMPARE_STORAGE_KEY);
     } catch {}
   }, [persistLocal]);
@@ -483,8 +604,8 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     }
     setUser(null);
-    await fetchFromSupabase();
-  }, [fetchFromSupabase]);
+    await syncWithSupabase(null);
+  }, [syncWithSupabase]);
 
   const publicQuotes = quotes.filter((q) => q.isPublic);
 
