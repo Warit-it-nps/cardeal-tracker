@@ -38,17 +38,55 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, { label: string; badgeClas
   DROPPED: { label: '❌ ตัดทิ้ง', badgeClass: 'bg-slate-200 text-slate-600 border-slate-300' },
 };
 
-export const FREEBIE_PRESETS: Omit<FreebieItemInput, 'id'>[] = [
-  { itemName: 'ประกันภัยชั้น 1', brandDetail: 'ซ่อมห้าง 1 ปี', estimatedValue: 22000, isIncludedInCalc: true },
-  { itemName: 'พ.ร.บ. รถยนต์', brandDetail: 'คุ้มครอง 1 ปี', estimatedValue: 645, isIncludedInCalc: true },
-  { itemName: 'ฟรีค่าจดทะเบียน', brandDetail: 'บริการจดทะเบียนป้ายขาว', estimatedValue: 3500, isIncludedInCalc: true },
-  { itemName: 'ฟิล์มกรองแสงรอบคัน + บานหน้า', brandDetail: 'เซรามิค (Lamina / 3M / Hi-Kool)', estimatedValue: 8000, isIncludedInCalc: true },
-  { itemName: 'Wall Charger + ฟรีค่าติดตั้ง', brandDetail: '7kW พร้อมสายไฟมาตรฐาน', estimatedValue: 25000, isIncludedInCalc: true },
-  { itemName: 'ฟรีค่าแรงและอะไหล่เช็คระยะ', brandDetail: 'แพ็กเกจบำรุงรักษาตามระยะ', estimatedValue: 15000, isIncludedInCalc: true },
-  { itemName: 'กล้องบันทึกหน้ารถ', brandDetail: 'หน้า-หลัง Full HD', estimatedValue: 3500, isIncludedInCalc: true },
-  { itemName: 'เคลือบแก้ว / เซรามิค', brandDetail: 'รับประกันชั้นเคลือบ', estimatedValue: 5000, isIncludedInCalc: false },
-  { itemName: 'พรมเข้ารูป + กรอบป้าย + ของจุกจิก', brandDetail: 'ผ้ายางปูพื้น / ร่ม / หมอน', estimatedValue: 2000, isIncludedInCalc: false },
+export interface FreebiePresetCategory {
+  categoryName: string;
+  badgeColor: string;
+  items: Omit<FreebieItemInput, 'id'>[];
+}
+
+export const FREEBIE_PRESET_CATEGORIES: FreebiePresetCategory[] = [
+  {
+    categoryName: '⚡ ของแถมเฉพาะรถไฟฟ้า (EV / PHEV)',
+    badgeColor: 'emerald',
+    items: [
+      { itemName: 'Wall Charger + ฟรีค่าติดตั้ง', brandDetail: 'Home Charger 7kW พร้อมสายไฟ', estimatedValue: 25000, isIncludedInCalc: true },
+      { itemName: 'สายชาร์จฉุกเฉินพกพา (Portable Charger)', brandDetail: 'AC Portable Charger 3.5kW', estimatedValue: 4500, isIncludedInCalc: true },
+      { itemName: 'สายจ่ายไฟออกภายนอก (V2L Adapter)', brandDetail: 'หัวแปลงจ่ายไฟ 220V (Vehicle-to-Load)', estimatedValue: 2500, isIncludedInCalc: true },
+      { itemName: 'รับประกันแบตเตอรี่ตลอดอายุการใช้งาน (Lifetime)', brandDetail: 'Lifetime Warranty แบตเตอรี่แรงดันสูง + มอเตอร์', estimatedValue: 30000, isIncludedInCalc: true },
+      { itemName: 'รับประกันแบตเตอรี่ 8 ปี / 160,000 กม.', brandDetail: 'รับประกันระบบขับเคลื่อนไฟฟ้า', estimatedValue: 15000, isIncludedInCalc: true },
+      { itemName: 'แผ่นปิดใต้ท้องรถ (กันกระแทกแบตเตอรี่)', brandDetail: 'อะลูมิเนียม/เหล็กกันกระแทกใต้แบต + มอเตอร์', estimatedValue: 4500, isIncludedInCalc: true },
+      { itemName: 'เครดิตชาร์จไฟฟรี (EV Charging Credit)', brandDetail: 'คูปองชาร์จไฟสถานี DC Fast Charge', estimatedValue: 5000, isIncludedInCalc: true },
+      { itemName: 'ม่านบังแดดหลังคากระจก (Panoramic Sunshade)', brandDetail: 'ม่านกันความร้อนตรงรุ่น', estimatedValue: 1800, isIncludedInCalc: true },
+    ],
+  },
+  {
+    categoryName: '🛡️ ประกันภัย ทะเบียน & แพ็กเกจดูแลรักษา',
+    badgeColor: 'sky',
+    items: [
+      { itemName: 'ประกันภัยชั้น 1', brandDetail: 'ซ่อมห้าง 1 ปี', estimatedValue: 22000, isIncludedInCalc: true },
+      { itemName: 'พ.ร.บ. รถยนต์', brandDetail: 'คุ้มครอง 1 ปี', estimatedValue: 645, isIncludedInCalc: true },
+      { itemName: 'ฟรีค่าจดทะเบียน', brandDetail: 'บริการจดทะเบียนป้ายขาว', estimatedValue: 3500, isIncludedInCalc: true },
+      { itemName: 'ฟรีค่าแรงและอะไหล่เช็คระยะ', brandDetail: 'แพ็กเกจบำรุงรักษาตามระยะ (5-8 ปี)', estimatedValue: 15000, isIncludedInCalc: true },
+      { itemName: 'บริการช่วยเหลือฉุกเฉิน 24 ชม. (Roadside Assistance)', brandDetail: 'บริการรถสไลด์/พ่วงแบตฟรีทั่วประเทศ', estimatedValue: 3500, isIncludedInCalc: true },
+      { itemName: 'ขยายเวลารับประกันคุณภาพตัวรถ (Extended Warranty)', brandDetail: 'รับประกันตัวรถ 5-8 ปี / 150,000 กม.', estimatedValue: 12000, isIncludedInCalc: true },
+    ],
+  },
+  {
+    categoryName: '✨ อุปกรณ์ตกแต่ง ฟิล์ม & ของแถมโชว์รูม',
+    badgeColor: 'amber',
+    items: [
+      { itemName: 'ฟิล์มกรองแสงรอบคัน + บานหน้า', brandDetail: 'เซรามิค (Lamina / 3M / Hi-Kool)', estimatedValue: 8000, isIncludedInCalc: true },
+      { itemName: 'กล้องบันทึกหน้ารถ', brandDetail: 'หน้า-หลัง Full HD / 4K', estimatedValue: 3500, isIncludedInCalc: true },
+      { itemName: 'ชุดแต่งรอบคัน / สเกิร์ต / สปอยเลอร์', brandDetail: 'ชุดแต่งแท้ตรงรุ่น', estimatedValue: 12000, isIncludedInCalc: true },
+      { itemName: 'พ่นกันสนิม / เคลือบแก้วเซรามิค', brandDetail: 'รับประกันชั้นเคลือบสี', estimatedValue: 5000, isIncludedInCalc: false },
+      { itemName: 'พรมเข้ารูป + ถาดท้ายรถ + กรอบป้าย', brandDetail: 'พรมกระดุม/5D + ผ้ายาง + ของที่ระลึก', estimatedValue: 2500, isIncludedInCalc: false },
+      { itemName: 'ชาร์จไฟเต็ม 100% / น้ำมันเต็มถังวันรับรถ', brandDetail: 'ส่งมอบวันออกรถ', estimatedValue: 1000, isIncludedInCalc: true },
+    ],
+  },
 ];
+
+export const FREEBIE_PRESETS: Omit<FreebieItemInput, 'id'>[] =
+  FREEBIE_PRESET_CATEGORIES.flatMap((c) => c.items);
 
 function buildMockQuote(
   raw: Omit<CarQuoteRecord, 'computed' | 'downPaymentPercent' | 'createdAt' | 'updatedAt'>

@@ -2,9 +2,9 @@
 
 import React from "react";
 import { FreebieItemInput } from "@/lib/finance/types";
-import { FREEBIE_PRESETS } from "@/lib/finance/presets";
+import { FREEBIE_PRESET_CATEGORIES } from "@/lib/finance/presets";
 import { formatTHB } from "@/lib/utils";
-import { Gift, Plus, Trash2, CheckSquare, Square } from "lucide-react";
+import { Gift, Plus, Trash2, CheckSquare, Square, Check } from "lucide-react";
 
 interface FreebiesManagerProps {
   freebies: FreebieItemInput[];
@@ -57,26 +57,51 @@ export function FreebiesManager({ freebies, onChange }: FreebiesManagerProps) {
 
   return (
     <div className="space-y-4">
-      {/* ปุ่ม Preset กดเลือกเร็ว */}
-      <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3.5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 mb-2">
+      {/* ปุ่ม Preset กดเลือกเร็ว แบ่งตามหมวดหมู่ (รวมของแถมรถไฟฟ้า EV โดยเฉพาะ) */}
+      <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-4 space-y-3.5">
+        <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
           <Gift className="h-4 w-4 text-emerald-600" />
-          <span>กดปุ่มลัดเพื่อเพิ่มของแถมยอดนิยม (พร้อมราคาประเมินมาตรฐาน):</span>
+          <span>
+            กดปุ่มลัดเพื่อเพิ่มของแถมยอดนิยม (ปรับแก้ราคาประเมินทีหลังได้ทุกชิ้น):
+          </span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {FREEBIE_PRESETS.map((preset) => (
-            <button
-              key={preset.itemName}
-              type="button"
-              onClick={() => handleAddPreset(preset)}
-              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
-            >
-              <Plus className="h-3 w-3 text-emerald-600" />
-              <span>{preset.itemName}</span>
-              <span className="text-[11px] text-emerald-600 font-semibold">
-                ({formatTHB(preset.estimatedValue)})
-              </span>
-            </button>
+
+        <div className="space-y-3">
+          {FREEBIE_PRESET_CATEGORIES.map((category) => (
+            <div key={category.categoryName} className="space-y-1.5">
+              <div className="text-[11px] font-bold text-slate-600">
+                {category.categoryName}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {category.items.map((preset) => {
+                  const alreadyAdded = freebies.some(
+                    (f) => f.itemName === preset.itemName
+                  );
+                  return (
+                    <button
+                      key={preset.itemName}
+                      type="button"
+                      onClick={() => handleAddPreset(preset)}
+                      className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-2xs transition-all cursor-pointer ${
+                        alreadyAdded
+                          ? "border-emerald-500 bg-emerald-100/80 text-emerald-900"
+                          : "border-emerald-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50"
+                      }`}
+                    >
+                      {alreadyAdded ? (
+                        <Check className="h-3 w-3 text-emerald-700" />
+                      ) : (
+                        <Plus className="h-3 w-3 text-emerald-600" />
+                      )}
+                      <span>{preset.itemName}</span>
+                      <span className="text-[11px] text-emerald-700 font-semibold">
+                        ({formatTHB(preset.estimatedValue)})
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       </div>
