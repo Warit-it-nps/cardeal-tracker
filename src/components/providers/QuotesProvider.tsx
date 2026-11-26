@@ -104,17 +104,22 @@ function writeLocalQuotes(records: CarQuoteRecord[]) {
 
 function mergeCloudAndLocalQuotes(
   cloudQuotes: CarQuoteRecord[],
-  localQuotes: CarQuoteRecord[]
+  localQuotes: CarQuoteRecord[],
+  currentUserId?: string
 ): CarQuoteRecord[] {
   const map = new Map<string, CarQuoteRecord>();
-  // ใส่ข้อมูลจาก Cloud ก่อน
+  // 1. ใส่ข้อมูลจาก Cloud ทั้งหมด (ซึ่งผ่าน RLS มาแล้ว: ของตัวเอง + ของที่คนอื่นเปิดแชร์)
   for (const cq of cloudQuotes) {
     map.set(cq.id, cq);
   }
-  // รวมข้อมูลที่บันทึกไว้ในเครื่อง (Local) ที่ยังไม่ได้อยู่ใน Cloud ไม่ให้หายเด็ดขาด
+  // 2. รวมเฉพาะข้อมูล Local ที่เป็นของเครื่องตัวเอง (ไม่เอาข้อมูลของบัญชีอื่นที่เคยล็อกอินค้างในเบราว์เซอร์เดียวกันมาปน)
   for (const lq of localQuotes) {
     if (!map.has(lq.id)) {
-      map.set(lq.id, lq);
+      const belongsToAnotherUser =
+        Boolean(lq.userId) && Boolean(currentUserId) && lq.userId !== currentUserId;
+      if (!belongsToAnotherUser && !isUuid(lq.id)) {
+        map.set(lq.id, lq);
+      }
     }
   }
   return Array.from(map.values());
@@ -291,10 +296,11 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
     setDbError(null);
     const cloudQuotes = (rows || []).map(mapSupabaseRowToRecord);
 
-    // 3. ผสานข้อมูล Cloud + ข้อมูล Local ที่ยังไม่ได้ซิงค์ เพื่อไม่ให้ข้อมูลที่ผู้ใช้เพิ่งกรอกหายเด็ดขาด
+    // 3. ผสานข้อมูล Cloud + ข้อมูล Local ที่ยังไม่ได้ซิงค์
     const merged = mergeCloudAndLocalQuotes(
       cloudQuotes,
-      readLocalQuotes()
+      readLocalQuotes(),
+      currentUser?.id
     );
     setQuotes(merged);
     writeLocalQuotes(merged);
@@ -608,15 +614,28 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     }
     setUser(null);
+    setSelectedCompareIds([]);
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
+      localStorage.removeItem(COMPARE_STORAGE_KEY);
+    } catch {}
     await syncWithSupabase(null);
   }, [syncWithSupabase]);
+
+  // แยก "ใบเสนอราคาของฉัน (myQuotes)" ออกจาก "ใบเสนอราคาที่แชร์สาธารณะทั้งหมด (publicQuotes)"
+  // - ถ้าล็อกอินแล้ว: myQuotes จะแสดงเฉพาะใบที่ user_id ตรงกับบัญชีที่ล็อกอินอยู่ (หรือใบที่สร้างในเครื่องแล้วยังไม่มี userId)
+  // - ถ้ายังไม่ได้ล็อกอิน: myQuotes จะแสดงเฉพาะใบที่สร้างไว้ในเครื่องตัวเอง (!q.userId) ไม่เอาใบที่คนอื่นแชร์ใน Cloud มาปนในหน้า "ใบเสนอราคาของฉัน"
+  const myQuotes = user
+    ? quotes.filter((q) => q.userId === user.id || !q.userId)
+    : quotes.filter((q) => !q.userId);
 
   const publicQuotes = quotes.filter((q) => q.isPublic);
 
   return (
     <QuotesContext.Provider
       value={{
-        quotes,
+        quotes: myQuotes,
         publicQuotes,
         selectedCompareIds,
         user,

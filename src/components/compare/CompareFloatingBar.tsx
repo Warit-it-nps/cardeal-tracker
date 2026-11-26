@@ -6,12 +6,17 @@ import { useQuotes } from "@/components/providers/QuotesProvider";
 import { Scale, X, ArrowRight } from "lucide-react";
 
 export function CompareFloatingBar() {
-  const { quotes, selectedCompareIds, clearCompareSelection } = useQuotes();
+  const { quotes, publicQuotes, selectedCompareIds, clearCompareSelection } =
+    useQuotes();
 
   if (selectedCompareIds.length === 0) return null;
 
   const selectedQuotes = selectedCompareIds
-    .map((id) => quotes.find((q) => q.id === id))
+    .map(
+      (id) =>
+        quotes.find((q) => q.id === id) ||
+        publicQuotes.find((q) => q.id === id)
+    )
     .filter(Boolean);
 
   return (

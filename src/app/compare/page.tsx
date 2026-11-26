@@ -17,7 +17,16 @@ import {
 
 function CompareContent() {
   const searchParams = useSearchParams();
-  const { quotes, selectedCompareIds, toggleCompareSelection } = useQuotes();
+  const { quotes, publicQuotes, selectedCompareIds, toggleCompareSelection } = useQuotes();
+
+  const allAccessibleQuotes = useMemo(() => {
+    const map = new Map<string, CarQuoteRecord>();
+    for (const q of quotes) map.set(q.id, q);
+    for (const pq of publicQuotes) {
+      if (!map.has(pq.id)) map.set(pq.id, pq);
+    }
+    return Array.from(map.values());
+  }, [quotes, publicQuotes]);
 
   const idsFromUrl = searchParams.get("ids")
     ? searchParams
@@ -32,13 +41,13 @@ function CompareContent() {
       ? selectedCompareIds
       : idsFromUrl.length > 0
       ? idsFromUrl
-      : quotes.slice(0, 3).map((q) => q.id);
+      : allAccessibleQuotes.slice(0, 3).map((q) => q.id);
 
   const comparedQuotes = useMemo(() => {
     return activeIds
-      .map((id) => quotes.find((q) => q.id === id))
+      .map((id) => allAccessibleQuotes.find((q) => q.id === id))
       .filter((q): q is CarQuoteRecord => Boolean(q));
-  }, [activeIds, quotes]);
+  }, [activeIds, allAccessibleQuotes]);
 
   // คำนวณผู้ชนะด้านต้นทุนสุทธิ (True Net Cost Winner)
   const winnerSummary = useMemo(() => {
@@ -87,7 +96,7 @@ function CompareContent() {
           คลิกเลือกใบเสนอราคาที่ต้องการนำมาเทียบเคียงในตาราง (เลือกได้ 2–4 รายการ):
         </div>
         <div className="flex flex-wrap gap-2">
-          {quotes.map((q) => {
+          {allAccessibleQuotes.map((q) => {
             const isSelected = activeIds.includes(q.id);
             return (
               <button
