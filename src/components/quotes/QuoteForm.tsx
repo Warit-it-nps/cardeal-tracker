@@ -744,6 +744,22 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </div>
           </label>
         </div>
+
+        <div className="pt-3 flex justify-end border-t border-slate-100">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-50 transition-all cursor-pointer"
+          >
+            <span>
+              {isSaving
+                ? "กำลังบันทึกข้อมูล..."
+                : mode === "edit"
+                ? "💾 บันทึกการแก้ไขใบเสนอราคา"
+                : "💾 บันทึกใบเสนอราคา"}
+            </span>
+          </button>
+        </div>
       </section>
 
       {/* Sticky Real-time Summary Bar */}

@@ -167,17 +167,15 @@ export function StickySummaryBar({
             )}
           </button>
 
-          {onSave && (
-            <button
-              type="submit"
-              disabled={isSaving}
-              onClick={onSave}
-              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-emerald-400 disabled:opacity-50 transition-all"
-            >
-              <Save className="h-4 w-4" />
-              <span>{isSaving ? "กำลังบันทึก..." : saveLabel}</span>
-            </button>
-          )}
+          <button
+            type="submit"
+            disabled={isSaving}
+            onClick={onSave}
+            className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-emerald-400 disabled:opacity-50 transition-all cursor-pointer"
+          >
+            <Save className="h-4 w-4" />
+            <span>{isSaving ? "กำลังบันทึก..." : saveLabel}</span>
+          </button>
         </div>
       </div>
     </div>
