@@ -12,8 +12,11 @@ import {
   PlusCircle,
   Search,
   ArrowUpDown,
-  RotateCcw,
   Scale,
+  Trash2,
+  Sparkles,
+  AlertTriangle,
+  LogIn,
 } from "lucide-react";
 
 type SortOption =
@@ -24,14 +27,22 @@ type SortOption =
   | "DATE_DESC";
 
 export default function DashboardPage() {
-  const { quotes, selectedCompareIds, resetDemoData } = useQuotes();
+  const {
+    quotes,
+    selectedCompareIds,
+    loadSampleData,
+    clearAllData,
+    user,
+    isCloudConnected,
+    dbError,
+    isLoading,
+  } = useQuotes();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilter, setBrandFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<SortOption>("NET_COST_ASC");
 
-  // ดึงรายชื่อยี่ห้อที่มีอยู่ในระบบ
   const availableBrands = useMemo(() => {
     const set = new Set<string>();
     quotes.forEach((q) => {
@@ -40,7 +51,6 @@ export default function DashboardPage() {
     return Array.from(set);
   }, [quotes]);
 
-  // กรองและเรียงลำดับใบเสนอราคา
   const filteredQuotes = useMemo(() => {
     return quotes
       .filter((q) => {
@@ -71,7 +81,6 @@ export default function DashboardPage() {
       });
   }, [quotes, brandFilter, statusFilter, searchQuery, sortBy]);
 
-  // หาใบเสนอราคาที่ต้นทุนสุทธิถูกที่สุดในรายการที่กรองอยู่
   const lowestNetCostId = useMemo(() => {
     if (filteredQuotes.length < 2) return null;
     let minQuote = filteredQuotes[0];
@@ -83,10 +92,41 @@ export default function DashboardPage() {
     return minQuote.id;
   }, [filteredQuotes]);
 
-  const bestDeal = filteredQuotes.find((q) => q.id === lowestNetCostId) || filteredQuotes[0];
+  const bestDeal =
+    filteredQuotes.find((q) => q.id === lowestNetCostId) || filteredQuotes[0];
 
   return (
     <div className="space-y-6">
+      {/* แจ้งเตือนหากยังไม่ได้รัน SQL ใน Supabase */}
+      {dbError && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold text-amber-900">
+              แจ้งเตือนจากฐานข้อมูล Supabase:
+            </div>
+            <p>{dbError}</p>
+          </div>
+        </div>
+      )}
+
+      {/* แบนเนอร์แนะนำให้ Login เพื่อบันทึกขึ้น Supabase Cloud */}
+      {isCloudConnected && !user && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-emerald-950">
+            <strong>เชื่อมต่อ Supabase Cloud แล้ว:</strong> เข้าสู่ระบบด้วย Google
+            เพื่อบันทึกใบเสนอราคาลงฐานข้อมูลส่วนตัวของคุณ
+          </div>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            <span>เข้าสู่ระบบด้วย Google</span>
+          </Link>
+        </div>
+      )}
+
       {/* Header & Quick Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -94,20 +134,23 @@ export default function DashboardPage() {
             รายการใบเสนอราคาทั้งหมด ({quotes.length})
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            ติ๊กเลือก 2–4 รายการเพื่อเปิดตารางเปรียบเทียบ หรือกด Clone เพื่อคัดลอกไปแก้เงื่อนไขเซลคนอื่น
+            ติ๊กเลือก 2–4 รายการเพื่อเปิดตารางเปรียบเทียบ หรือกด Clone
+            เพื่อคัดลอกไปแก้เงื่อนไขเซลคนอื่น
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={resetDemoData}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            title="รีเซ็ตข้อมูลตัวอย่างเริ่มต้น"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>รีเซ็ตข้อมูลตัวอย่าง</span>
-          </button>
+          {quotes.length > 0 && (
+            <button
+              type="button"
+              onClick={clearAllData}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+              title="ล้างข้อมูลในหน้าจอ"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>ล้างรายการ</span>
+            </button>
+          )}
 
           {selectedCompareIds.length >= 2 && (
             <Link
@@ -159,7 +202,9 @@ export default function DashboardPage() {
             </div>
             <div className="text-lg font-extrabold text-slate-900">
               {formatTHB(
-                Math.min(...filteredQuotes.map((q) => q.computed.monthlyPayment))
+                Math.min(
+                  ...filteredQuotes.map((q) => q.computed.monthlyPayment)
+                )
               )}
               /ด.
             </div>
@@ -171,7 +216,9 @@ export default function DashboardPage() {
             </div>
             <div className="text-lg font-extrabold text-amber-700">
               {formatTHB(
-                Math.min(...filteredQuotes.map((q) => q.computed.dayOneCashTotal))
+                Math.min(
+                  ...filteredQuotes.map((q) => q.computed.dayOneCashTotal)
+                )
               )}
             </div>
           </div>
@@ -179,106 +226,127 @@ export default function DashboardPage() {
       )}
 
       {/* Filter & Sort Controls */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-          {/* Search Input */}
-          <div className="sm:col-span-5 relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="ค้นหายี่ห้อ, รุ่นรถ, ชื่อเซล, สาขาโชว์รูม..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
+      {quotes.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-5 relative">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ค้นหายี่ห้อ, รุ่นรถ, ชื่อเซล, สาขาโชว์รูม..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
 
-          {/* Brand Filter */}
-          <div className="sm:col-span-3">
-            <select
-              value={brandFilter}
-              onChange={(e) => setBrandFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
-            >
-              <option value="ALL">ทุกยี่ห้อ ({quotes.length})</option>
-              {availableBrands.map((b) => (
-                <option key={b} value={b}>
-                  ยี่ห้อ {b}
+            <div className="sm:col-span-3">
+              <select
+                value={brandFilter}
+                onChange={(e) => setBrandFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="ALL">ทุกยี่ห้อ ({quotes.length})</option>
+                {availableBrands.map((b) => (
+                  <option key={b} value={b}>
+                    ยี่ห้อ {b}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm:col-span-4 relative">
+              <ArrowUpDown className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-emerald-600" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="w-full rounded-xl border border-emerald-300 bg-emerald-50/40 pl-9 pr-3 py-2 text-xs sm:text-sm font-bold text-emerald-900 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="NET_COST_ASC">
+                  เรียงตาม: ต้นทุนสุทธิคุ้มสุด (ต่ำ → สูง)
                 </option>
-              ))}
-            </select>
+                <option value="TOTAL_OUTFLOW_ASC">
+                  เรียงตาม: ยอดจ่ายจริงรวมถูกที่สุด
+                </option>
+                <option value="MONTHLY_ASC">
+                  เรียงตาม: ค่างวดต่อเดือนถูกที่สุด
+                </option>
+                <option value="DAY_ONE_ASC">
+                  เรียงตาม: เงินออกรถวันรับรถน้อยที่สุด
+                </option>
+                <option value="DATE_DESC">
+                  เรียงตาม: วันที่ได้รับใบเสนอราคาล่าสุด
+                </option>
+              </select>
+            </div>
           </div>
 
-          {/* Sort Option */}
-          <div className="sm:col-span-4 relative">
-            <ArrowUpDown className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-emerald-600" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="w-full rounded-xl border border-emerald-300 bg-emerald-50/40 pl-9 pr-3 py-2 text-xs sm:text-sm font-bold text-emerald-900 focus:border-emerald-500 focus:outline-none"
-            >
-              <option value="NET_COST_ASC">
-                เรียงตาม: ต้นทุนสุทธิคุ้มสุด (ต่ำ → สูง)
-              </option>
-              <option value="TOTAL_OUTFLOW_ASC">
-                เรียงตาม: ยอดจ่ายจริงรวมถูกที่สุด
-              </option>
-              <option value="MONTHLY_ASC">
-                เรียงตาม: ค่างวดต่อเดือนถูกที่สุด
-              </option>
-              <option value="DAY_ONE_ASC">
-                เรียงตาม: เงินออกรถวันรับรถน้อยที่สุด
-              </option>
-              <option value="DATE_DESC">
-                เรียงตาม: วันที่ได้รับใบเสนอราคาล่าสุด
-              </option>
-            </select>
-          </div>
-        </div>
-
-        {/* Status Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("ALL")}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-              statusFilter === "ALL"
-                ? "bg-slate-900 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            ทั้งหมด
-          </button>
-          {(Object.keys(QUOTE_STATUS_LABELS) as QuoteStatus[]).map((st) => (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
             <button
-              key={st}
               type="button"
-              onClick={() => setStatusFilter(st)}
+              onClick={() => setStatusFilter("ALL")}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                statusFilter === st
-                  ? "bg-emerald-600 text-white"
+                statusFilter === "ALL"
+                  ? "bg-slate-900 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              {QUOTE_STATUS_LABELS[st].label}
+              ทั้งหมด
             </button>
-          ))}
+            {(Object.keys(QUOTE_STATUS_LABELS) as QuoteStatus[]).map((st) => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => setStatusFilter(st)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  statusFilter === st
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {QUOTE_STATUS_LABELS[st].label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Cards Grid */}
-      {filteredQuotes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-3">
-          <p className="text-base font-bold text-slate-700">
-            ไม่พบใบเสนอราคาที่ตรงกับเงื่อนไขการค้นหา
-          </p>
-          <Link
-            href="/quotes/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>สร้างใบเสนอราคาใหม่</span>
-          </Link>
+      {/* Cards Grid or Empty State */}
+      {isLoading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
+          กำลังดึงข้อมูลจากฐานข้อมูล...
+        </div>
+      ) : filteredQuotes.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+            <PlusCircle className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-extrabold text-slate-900">
+              ยังไม่มีใบเสนอราคาในระบบ
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+              เริ่มต้นบันทึกใบเสนอราคาใบแรกของคุณจากการคุยกับเซล หรือกดปุ่มด้านล่างเพื่อโหลดตัวอย่างใบเสนอราคาขึ้นมาทดลองเปรียบเทียบ
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/quotes/new"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>+ บันทึกใบเสนอราคาใบแรกของคุณ</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={loadSampleData}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>โหลดข้อมูลตัวอย่าง (ทดลองเทียบ 4 โชว์รูม)</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

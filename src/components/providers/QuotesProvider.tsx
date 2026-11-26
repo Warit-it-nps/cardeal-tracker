@@ -1,15 +1,24 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { CarQuoteRecord, FreebieItemInput } from "@/lib/finance/types";
-import { calculateCarQuote, calcDownPaymentPercentFromAmount } from "@/lib/finance/calculator";
+import {
+  calculateCarQuote,
+  calcDownPaymentPercentFromAmount,
+} from "@/lib/finance/calculator";
 import { INITIAL_DEMO_QUOTES } from "@/lib/finance/presets";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { generateShareToken } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 
-const LOCAL_STORAGE_KEY = "cardeal_tracker_quotes_v1";
-const COMPARE_STORAGE_KEY = "cardeal_tracker_compare_ids_v1";
+const LOCAL_STORAGE_KEY = "cardeal_tracker_quotes_v2";
+const COMPARE_STORAGE_KEY = "cardeal_tracker_compare_ids_v2";
 
 interface QuotesContextValue {
   quotes: CarQuoteRecord[];
@@ -18,23 +27,43 @@ interface QuotesContextValue {
   user: User | null;
   isCloudConnected: boolean;
   isLoading: boolean;
+  dbError: string | null;
   upsertQuote: (
-    quoteInput: Omit<CarQuoteRecord, "id" | "computed" | "downPaymentPercent" | "createdAt" | "updatedAt" | "shareToken"> & {
+    quoteInput: Omit<
+      CarQuoteRecord,
+      | "id"
+      | "computed"
+      | "downPaymentPercent"
+      | "createdAt"
+      | "updatedAt"
+      | "shareToken"
+    > & {
       id?: string;
       shareToken?: string;
     }
   ) => Promise<CarQuoteRecord>;
   deleteQuote: (id: string) => Promise<void>;
   duplicateQuote: (id: string) => Promise<CarQuoteRecord | null>;
-  togglePublicShare: (id: string, isPublic: boolean, shareSalesContact: boolean) => Promise<void>;
+  togglePublicShare: (
+    id: string,
+    isPublic: boolean,
+    shareSalesContact: boolean
+  ) => Promise<void>;
   toggleCompareSelection: (id: string) => void;
   clearCompareSelection: () => void;
-  resetDemoData: () => void;
+  loadSampleData: () => void;
+  clearAllData: () => void;
   getQuoteByIdOrToken: (idOrToken: string) => CarQuoteRecord | undefined;
   signOut: () => Promise<void>;
 }
 
 const QuotesContext = createContext<QuotesContextValue | undefined>(undefined);
+
+function isUuid(val: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val
+  );
+}
 
 function mapSupabaseRowToRecord(row: Record<string, any>): CarQuoteRecord {
   const freebies: FreebieItemInput[] = Array.isArray(row.quote_freebies)
@@ -94,16 +123,47 @@ function mapSupabaseRowToRecord(row: Record<string, any>): CarQuoteRecord {
 }
 
 export function QuotesProvider({ children }: { children: React.ReactNode }) {
-  const [quotes, setQuotes] = useState<CarQuoteRecord[]>(INITIAL_DEMO_QUOTES);
-  const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([
-    INITIAL_DEMO_QUOTES[0]?.id,
-    INITIAL_DEMO_QUOTES[1]?.id,
-  ].filter(Boolean));
+  const [quotes, setQuotes] = useState<CarQuoteRecord[]>([]);
+  const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [dbError, setDbError] = useState<string | null>(null);
   const isCloudConnected = isSupabaseConfigured();
 
-  // Load initial state from LocalStorage or Supabase
+  const fetchFromSupabase = useCallback(async () => {
+    const supabase = createClient();
+    if (!supabase) return false;
+
+    const { data: rows, error } = await supabase
+      .from("car_quotes")
+      .select("*, quote_freebies(*)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      // แจ้งเตือนกรณีผู้ใช้ยังไม่ได้รันไฟล์ supabase/schema.sql
+      if (
+        error.code === "42P01" ||
+        error.message?.includes("car_quotes") ||
+        error.message?.includes("relation")
+      ) {
+        setDbError(
+          "ยังไม่ได้สร้างตารางในฐานข้อมูล Supabase กรุณานำโค้ดในไฟล์ supabase/schema.sql ไปรันใน Supabase SQL Editor"
+        );
+      } else {
+        setDbError(error.message);
+      }
+      return false;
+    }
+
+    setDbError(null);
+    const mapped = (rows || []).map(mapSupabaseRowToRecord);
+    setQuotes(mapped);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
+    } catch {}
+    return true;
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -117,25 +177,6 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        const savedLocal = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (savedLocal) {
-          const parsed: CarQuoteRecord[] = JSON.parse(savedLocal);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const hydrated = parsed.map((q) => ({
-              ...q,
-              computed: calculateCarQuote(q),
-              downPaymentPercent: calcDownPaymentPercentFromAmount(
-                q.msrp,
-                q.cashDiscount,
-                q.downPaymentAmount
-              ),
-            }));
-            if (mounted) setQuotes(hydrated);
-          }
-        } else {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_DEMO_QUOTES));
-        }
-
         const supabase = createClient();
         if (supabase) {
           const {
@@ -146,22 +187,38 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
             setUser(session?.user ?? null);
           }
 
-          const { data: rows, error } = await supabase
-            .from("car_quotes")
-            .select("*, quote_freebies(*)")
-            .order("created_at", { ascending: false });
+          await fetchFromSupabase();
 
-          if (!error && rows && rows.length > 0 && mounted) {
-            const mapped = rows.map(mapSupabaseRowToRecord);
-            setQuotes(mapped);
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
-          }
-
-          supabase.auth.onAuthStateChange((_event, newSession) => {
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
             if (mounted) {
               setUser(newSession?.user ?? null);
+              await fetchFromSupabase();
             }
           });
+
+          return () => {
+            subscription.unsubscribe();
+          };
+        } else {
+          // โหมด Local (ไม่ได้ต่อ Supabase)
+          const savedLocal = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (savedLocal) {
+            const parsed: CarQuoteRecord[] = JSON.parse(savedLocal);
+            if (Array.isArray(parsed)) {
+              const hydrated = parsed.map((q) => ({
+                ...q,
+                computed: calculateCarQuote(q),
+                downPaymentPercent: calcDownPaymentPercentFromAmount(
+                  q.msrp,
+                  q.cashDiscount,
+                  q.downPaymentAmount
+                ),
+              }));
+              if (mounted) setQuotes(hydrated);
+            }
+          }
         }
       } catch (e) {
         console.error("Failed to initialize quotes store:", e);
@@ -174,7 +231,7 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [fetchFromSupabase]);
 
   const persistLocal = useCallback((nextQuotes: CarQuoteRecord[]) => {
     setQuotes(nextQuotes);
@@ -205,17 +262,18 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
         userId: user?.id || existing?.userId,
         downPaymentAmount: computed.effectiveDownPaymentAmount,
         downPaymentPercent,
-        shareToken: existing?.shareToken || quoteInput.shareToken || generateShareToken(),
+        shareToken:
+          existing?.shareToken || quoteInput.shareToken || generateShareToken(),
         computed,
         createdAt: existing?.createdAt || now,
         updatedAt: now,
       };
 
-      // Sync to Supabase if user is authenticated and Supabase is configured
+      // บันทึกลง Supabase ถ้าระบบเชื่อมต่อแล้วและผู้ใช้ล็อกอินอยู่
       const supabase = createClient();
       if (supabase && user) {
-        const dbPayload = {
-          ...(existing ? { id: record.id } : {}),
+        const dbPayload: Record<string, any> = {
+          ...(existing && isUuid(existing.id) ? { id: existing.id } : {}),
           user_id: user.id,
           brand: record.brand,
           model: record.model,
@@ -244,7 +302,8 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
           monthly_payment: record.computed.monthlyPayment,
           day_one_cash: record.computed.dayOneCashTotal,
           total_cash_outflow: record.computed.totalCashOutflow,
-          total_effective_freebies: record.computed.totalEffectiveFreebiesValue,
+          total_effective_freebies:
+            record.computed.totalEffectiveFreebiesValue,
           net_effective_cost: record.computed.netEffectiveCost,
           is_public: record.isPublic,
           share_sales_contact: record.shareSalesContact,
@@ -257,9 +316,15 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
           .select()
           .single();
 
-        if (!error && savedRow) {
+        if (error) {
+          setDbError(error.message);
+        } else if (savedRow) {
+          setDbError(null);
           record.id = String(savedRow.id);
-          await supabase.from("quote_freebies").delete().eq("quote_id", record.id);
+          await supabase
+            .from("quote_freebies")
+            .delete()
+            .eq("quote_id", record.id);
           if (record.freebies.length > 0) {
             await supabase.from("quote_freebies").insert(
               record.freebies.map((f, idx) => ({
@@ -288,14 +353,16 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
   const deleteQuote = useCallback(
     async (id: string) => {
       const supabase = createClient();
-      if (supabase && user) {
+      if (supabase && user && isUuid(id)) {
         await supabase.from("car_quotes").delete().eq("id", id);
       }
       const nextQuotes = quotes.filter((q) => q.id !== id);
       persistLocal(nextQuotes);
       setSelectedCompareIds((prev) => {
         const next = prev.filter((item) => item !== id);
-        localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+        try {
+          localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
         return next;
       });
     },
@@ -380,14 +447,25 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
-  const resetDemoData = useCallback(() => {
+  const loadSampleData = useCallback(() => {
     persistLocal(INITIAL_DEMO_QUOTES);
     const defaultCompare = [
       INITIAL_DEMO_QUOTES[0]?.id,
       INITIAL_DEMO_QUOTES[1]?.id,
     ].filter(Boolean);
     setSelectedCompareIds(defaultCompare);
-    localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(defaultCompare));
+    try {
+      localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(defaultCompare));
+    } catch {}
+  }, [persistLocal]);
+
+  const clearAllData = useCallback(() => {
+    persistLocal([]);
+    setSelectedCompareIds([]);
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(COMPARE_STORAGE_KEY);
+    } catch {}
   }, [persistLocal]);
 
   const getQuoteByIdOrToken = useCallback(
@@ -405,7 +483,8 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     }
     setUser(null);
-  }, []);
+    await fetchFromSupabase();
+  }, [fetchFromSupabase]);
 
   const publicQuotes = quotes.filter((q) => q.isPublic);
 
@@ -418,13 +497,15 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
         user,
         isCloudConnected,
         isLoading,
+        dbError,
         upsertQuote,
         deleteQuote,
         duplicateQuote,
         togglePublicShare,
         toggleCompareSelection,
         clearCompareSelection,
-        resetDemoData,
+        loadSampleData,
+        clearAllData,
         getQuoteByIdOrToken,
         signOut,
       }}

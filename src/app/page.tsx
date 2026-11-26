@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
-  const { publicQuotes, quotes } = useQuotes();
+  const { publicQuotes, quotes, loadSampleData } = useQuotes();
   const featuredPublic = publicQuotes.slice(0, 3);
 
   return (
@@ -58,7 +58,7 @@ export default function HomePage() {
               href="/dashboard"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition-all"
             >
-              <span>ดูใบเสนอราคาทั้งหมด ({quotes.length})</span>
+              <span>ดูใบเสนอราคาของฉัน ({quotes.length})</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
 
@@ -129,7 +129,7 @@ export default function HomePage() {
               </h2>
             </div>
             <p className="text-xs text-slate-500">
-              สามารถติ๊ก &ldquo;[☑ เทียบ]&rdquo; เพื่อนำดีลสาธารณะไปเปรียบเทียบกับใบเสนอราคาของคุณได้ทันที
+              ใบเสนอราคาที่ผู้ใช้งานเปิดแชร์สาธารณะไว้ในฐานข้อมูลจะแสดงที่นี่
             </p>
           </div>
 
@@ -142,15 +142,40 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredPublic.map((quote) => (
-            <QuoteCard
-              key={quote.id}
-              quote={quote}
-              readOnlyPublicMode={true}
-            />
-          ))}
-        </div>
+        {featuredPublic.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center space-y-3">
+            <p className="text-sm font-bold text-slate-700">
+              ยังไม่มีใบเสนอราคาที่แชร์สาธารณะในฐานข้อมูล
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link
+                href="/quotes/new"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>บันทึกใบเสนอราคาใบแรก</span>
+              </Link>
+              <button
+                type="button"
+                onClick={loadSampleData}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <span>โหลดข้อมูลตัวอย่างเพื่อทดลองเล่น</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredPublic.map((quote) => (
+              <QuoteCard
+                key={quote.id}
+                quote={quote}
+                readOnlyPublicMode={true}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <CompareFloatingBar />
