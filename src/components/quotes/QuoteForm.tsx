@@ -398,7 +398,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="1000"
+              step="any"
               min="0"
               required
               value={msrp || ""}
@@ -413,7 +413,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="1000"
+              step="any"
               min="0"
               value={cashDiscount || ""}
               onChange={(e) =>
@@ -432,7 +432,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="1000"
+              step="any"
               min="0"
               value={downPaymentSubsidy || ""}
               onChange={(e) =>
@@ -570,7 +570,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="100"
+              step="any"
               min="0"
               value={registrationFee || ""}
               onChange={(e) =>
@@ -587,7 +587,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="500"
+              step="any"
               min="0"
               value={insuranceFee || ""}
               onChange={(e) =>
@@ -604,7 +604,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="100"
+              step="any"
               min="0"
               value={financeOtherFee || ""}
               onChange={(e) =>
@@ -621,7 +621,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             </label>
             <input
               type="number"
-              step="500"
+              step="any"
               min="0"
               value={redPlateDeposit || ""}
               onChange={(e) =>

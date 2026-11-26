@@ -130,7 +130,7 @@ export function FreebiesManager({ freebies, onChange }: FreebiesManagerProps) {
                     <input
                       type="number"
                       min="0"
-                      step="100"
+                      step="any"
                       placeholder="มูลค่า (บาท)"
                       value={item.estimatedValue || ""}
                       onChange={(e) =>

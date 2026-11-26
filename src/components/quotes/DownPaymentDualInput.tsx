@@ -105,7 +105,7 @@ export function DownPaymentDualInput({
           <div className="relative">
             <input
               type="number"
-              step="100"
+              step="any"
               min="0"
               max={netCarPrice || undefined}
               value={
