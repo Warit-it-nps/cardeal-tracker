@@ -110,19 +110,18 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* แบนเนอร์แนะนำให้ Login เพื่อบันทึกขึ้น Supabase Cloud */}
+      {/* แบนเนอร์แนะนำให้ Login เพื่อซิงค์ข้อมูลข้ามอุปกรณ์ */}
       {isCloudConnected && !user && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs text-emerald-950">
-            <strong>เชื่อมต่อ Supabase Cloud แล้ว:</strong> เข้าสู่ระบบด้วย Google
-            เพื่อบันทึกใบเสนอราคาลงฐานข้อมูลส่วนตัวของคุณ
+            เข้าสู่ระบบด้วยบัญชี Google เพื่อสำรองข้อมูลใบเสนอราคาและเปิดดูได้จากทุกอุปกรณ์
           </div>
           <Link
             href="/login"
             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
           >
             <LogIn className="h-3.5 w-3.5" />
-            <span>เข้าสู่ระบบด้วย Google</span>
+            <span>เข้าสู่ระบบ</span>
           </Link>
         </div>
       )}

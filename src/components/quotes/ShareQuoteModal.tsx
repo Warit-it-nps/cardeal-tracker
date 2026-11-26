@@ -88,7 +88,7 @@ export function ShareQuoteModal({ quote, onClose }: ShareQuoteModalProps) {
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-900">
-                  {isPublic ? "สาธารณะ (แชร์ได้ไม่ต้อง Login)" : "ส่วนตัว (Private)"}
+                  {isPublic ? "เปิดแชร์ลิงก์สาธารณะ" : "เก็บไว้ดูส่วนตัว"}
                 </span>
                 <input
                   type="checkbox"
@@ -100,7 +100,7 @@ export function ShareQuoteModal({ quote, onClose }: ShareQuoteModalProps) {
               </div>
               <p className="mt-0.5 text-xs text-slate-600">
                 {isPublic
-                  ? "ทุกคนที่มีลิงก์หรือเข้าหน้า Public Explore สามารถดูโครงสร้างราคานี้ได้โดยไม่ต้องล็อกอิน"
+                  ? "ผู้ที่มีลิงก์สามารถเปิดดูรายละเอียดใบเสนอราคานี้ได้"
                   : "เฉพาะคุณเท่านั้นที่มองเห็นใบเสนอราคานี้"}
               </p>
             </div>
@@ -129,7 +129,7 @@ export function ShareQuoteModal({ quote, onClose }: ShareQuoteModalProps) {
         {isPublic && (
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-slate-700">
-              ลิงก์สำหรับส่งให้เพื่อนดู (ไม่ต้อง Login):
+              ลิงก์สำหรับแชร์ใบเสนอราคา:
             </label>
             <div className="flex items-center gap-2">
               <input

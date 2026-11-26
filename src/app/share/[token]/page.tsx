@@ -48,7 +48,7 @@ export default function PublicShareDetailPage() {
           className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>ไปที่ตลาดราคาที่แชร์ (Public Explore)</span>
+          <span>ดูใบเสนอราคาที่แชร์ทั้งหมด</span>
         </Link>
       </div>
     );
@@ -150,7 +150,7 @@ export default function PublicShareDetailPage() {
               <div className="inline-flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
                   <Globe className="h-3 w-3" />
-                  ใบเสนอราคาที่แชร์สาธารณะ (ดูได้ไม่ต้อง Login)
+                  รายละเอียดใบเสนอราคา
                 </span>
                 <span
                   className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${pt.badgeClass}`}

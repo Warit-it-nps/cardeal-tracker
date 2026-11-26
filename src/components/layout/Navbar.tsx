@@ -11,15 +11,13 @@ import {
   Globe,
   LogIn,
   LogOut,
-  Cloud,
-  HardDrive,
 } from "lucide-react";
 import { useQuotes } from "@/components/providers/QuotesProvider";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { selectedCompareIds, user, isCloudConnected, signOut } = useQuotes();
+  const { selectedCompareIds, user, signOut } = useQuotes();
 
   const navItems = [
     {
@@ -29,7 +27,7 @@ export function Navbar() {
     },
     {
       href: "/quotes/new",
-      label: "คำนวณ / เพิ่มใบเสนอราคา",
+      label: "คำนวณใบเสนอราคา",
       icon: PlusCircle,
     },
     {
@@ -40,7 +38,7 @@ export function Navbar() {
     },
     {
       href: "/explore",
-      label: "ตลาดราคาที่แชร์ (Public)",
+      label: "รวมโปรใบเสนอราคา",
       icon: Globe,
     },
   ];
@@ -59,7 +57,7 @@ export function Navbar() {
                   CarDeal <span className="text-emerald-600">Tracker</span>
                 </span>
                 <p className="hidden text-[11px] text-slate-500 sm:block">
-                  ระบบคำนวณยอดจ่ายจริงสุทธิ & เปรียบเทียบใบเสนอราคารถยนต์
+                  คำนวณไฟแนนซ์ & เปรียบเทียบใบเสนอราคารถยนต์
                 </p>
               </div>
             </Link>
@@ -94,32 +92,6 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-2.5">
-            <div
-              className={cn(
-                "hidden sm:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
-                user && isCloudConnected
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 bg-slate-100 text-slate-600"
-              )}
-              title={
-                user && isCloudConnected
-                  ? "เชื่อมต่อ Supabase Cloud แล้ว"
-                  : "บันทึกข้อมูลอัตโนมัติในเบราว์เซอร์ (เข้าใช้งานได้ทันทีไม่ต้องตั้งค่า DB)"
-              }
-            >
-              {user && isCloudConnected ? (
-                <>
-                  <Cloud className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>Supabase Sync</span>
-                </>
-              ) : (
-                <>
-                  <HardDrive className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Local Ready</span>
-                </>
-              )}
-            </div>
-
             {user ? (
               <div className="flex items-center gap-2">
                 <span className="hidden lg:inline-block text-xs font-medium text-slate-600 max-w-[140px] truncate">
@@ -139,7 +111,7 @@ export function Navbar() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
               >
                 <LogIn className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Google Login</span>
+                <span>เข้าสู่ระบบ</span>
               </Link>
             )}
           </div>
@@ -171,9 +143,9 @@ export function Navbar() {
               </div>
               <span className="mt-0.5 truncate max-w-[76px]">
                 {item.href === "/quotes/new"
-                  ? "เพิ่มใบเสนอ"
+                  ? "คำนวณราคา"
                   : item.href === "/explore"
-                  ? "ราคาที่แชร์"
+                  ? "รวมโปร"
                   : item.href === "/dashboard"
                   ? "ใบเสนอราคา"
                   : item.label}

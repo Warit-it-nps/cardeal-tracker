@@ -41,14 +41,14 @@ export default function PublicExplorePage() {
       <div className="rounded-3xl bg-slate-900 p-6 sm:p-8 text-white space-y-3">
         <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-300">
           <Globe className="h-3.5 w-3.5" />
-          <span>Public Community Deals • เข้าดูได้โดยไม่ต้อง Login</span>
+          <span>รวมโปรโมชั่นและใบเสนอราคารถยนต์</span>
         </div>
         <h1 className="text-xl sm:text-3xl font-extrabold">
-          ตลาดรวมใบเสนอราคารถยนต์ที่แชร์จากผู้ใช้งานจริง
+          รวมใบเสนอราคารถยนต์จากผู้ซื้อจริง
         </h1>
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-          ดูฐานข้อมูลส่วนลดเงินสด ซับดาวน์ ดอกเบี้ย และรายการของแถมที่สมาชิกเลือกเปิดเป็นสาธารณะ
-          คุณสามารถกด &ldquo;คัดลอกไปเปรียบเทียบ / แก้ไขต่อ&rdquo; หรือติ๊ก &ldquo;[☑ เทียบ]&rdquo; ได้ทันทีโดยไม่ต้องล็อกอิน
+          เช็กข้อมูลส่วนลดเงินสด ซับดาวน์ ดอกเบี้ย และรายการของแถมจากหลายโชว์รูม
+          สามารถกดคัดลอกใบเสนอราคาที่สนใจไปปรับแก้ตัวเลขหรือนำเข้าตารางเปรียบเทียบได้ทันที
         </p>
       </div>
 

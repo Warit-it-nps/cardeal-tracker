@@ -220,7 +220,7 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">
-              1. ข้อมูลรถและผู้ขาย (Car & Sales Info)
+              1. ข้อมูลรถและโชว์รูม
             </h2>
             <p className="text-xs text-slate-500">
               ระบุรุ่นรถ โชว์รูม และสถานะการคุยเพื่อใช้เปรียบเทียบภายหลัง
@@ -383,10 +383,10 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">
-              2. โครงสร้างราคาและเงื่อนไขไฟแนนซ์ (Thai Flat Rate)
+              2. ราคาและเงื่อนไขไฟแนนซ์
             </h2>
             <p className="text-xs text-slate-500">
-              แยกส่วนลดเงินสด (หักราคารถก่อนคิดดอกเบี้ย) กับซับดาวน์ (ช่วยจ่ายวันรับรถ) ออกจากกันอย่างแม่นยำ
+              แยกส่วนลดเงินสด (หักราคารถก่อนคิดดอกเบี้ย) กับซับดาวน์ (ช่วยจ่ายวันรับรถ) ออกจากกัน
             </p>
           </div>
         </div>
@@ -555,10 +555,10 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">
-              3. ค่าใช้จ่ายแฝงวันรับรถ (Delivery Day Out-of-Pocket)
+              3. ค่าใช้จ่ายวันรับรถ
             </h2>
             <p className="text-xs text-slate-500">
-              คำนวณเงินสดที่ต้องเตรียมไปจ่ายจริงในวันรับรถ (แยกรายการมัดจำป้ายแดงที่ได้คืนภายหลัง)
+              คำนวณเงินสดที่ต้องเตรียมไปจ่ายในวันออกรถ
             </p>
           </div>
         </div>
@@ -662,10 +662,10 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">
-              4. ระบบของแถมและมูลค่าประเมิน (Freebies & Value Estimator)
+              4. รายการของแถมและมูลค่าประเมิน
             </h2>
             <p className="text-xs text-slate-500">
-              ระบุยี่ห้อและมูลค่าประเมินของแถมแต่ละชิ้น พร้อมติ๊กเลือกเฉพาะของที่ได้ใช้งานจริงเพื่อหักคำนวณความคุ้มค่า
+              ระบุของแถมที่ได้จากโชว์รูม และติ๊กเลือกเฉพาะรายการที่ได้ใช้งานจริงเพื่อนำมาหักคำนวณความคุ้มค่า
             </p>
           </div>
         </div>
@@ -681,10 +681,10 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">
-              5. หมายเหตุ & การแชร์ใบเสนอราคา (Privacy & Public Sharing)
+              5. บันทึกเพิ่มเติม & การแชร์ใบเสนอราคา
             </h2>
             <p className="text-xs text-slate-500">
-              เลือกเก็บไว้ดูส่วนตัว หรือแชร์ลิงก์ให้เพื่อนและคนในเว็บเข้ามาดูราคาได้โดยไม่ต้อง Login
+              จดบันทึกเงื่อนไขพิเศษ และเลือกตั้งค่าการแชร์ใบเสนอราคา
             </p>
           </div>
         </div>
@@ -712,10 +712,10 @@ export function QuoteForm({ initialQuote, mode }: QuoteFormProps) {
             />
             <div>
               <div className="text-sm font-semibold text-slate-900">
-                เปิดแชร์ใบเสนอราคานี้เป็นสาธารณะ (Public Deal)
+                แชร์ใบเสนอราคานี้ให้คนอื่นดูได้
               </div>
               <p className="text-xs text-slate-500">
-                คนทั่วไปสามารถเข้าดูใบเสนอราคานี้ผ่านลิงก์แชร์ หรือดูในหน้า &ldquo;ตลาดราคาที่แชร์&rdquo; ได้โดยไม่ต้อง Login
+                เปิดให้ส่งลิงก์ใบเสนอราคานี้ให้เพื่อนดูได้ และแสดงในหน้ารวมโปรใบเสนอราคา
               </p>
             </div>
           </label>
