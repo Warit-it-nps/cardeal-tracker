@@ -27,6 +27,8 @@ export default function PublicShareDetailPage() {
     duplicateQuote,
     toggleCompareSelection,
     selectedCompareIds,
+    isLoading,
+    dbError,
   } = useQuotes();
 
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -34,12 +36,25 @@ export default function PublicShareDetailPage() {
 
   const quote = params?.token ? getQuoteByIdOrToken(params.token) : undefined;
 
+  if (isLoading && !quote) {
+    return (
+      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+        กำลังโหลดข้อมูลใบเสนอราคา...
+      </div>
+    );
+  }
+
   if (!quote || !quote.isPublic) {
     return (
       <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-10 text-center space-y-4">
         <h2 className="text-lg font-extrabold text-slate-900">
           ไม่พบลิงก์ใบเสนอราคานี้ หรือเจ้าของตั้งค่าเป็นส่วนตัวแล้ว
         </h2>
+        {dbError && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+            {dbError}
+          </div>
+        )}
         <p className="text-xs text-slate-500">
           คุณยังสามารถดูใบเสนอราคาที่แชร์สาธารณะรายการอื่นๆ ได้ในหน้าตลาดราคาที่แชร์
         </p>

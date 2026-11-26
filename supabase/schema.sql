@@ -225,3 +225,13 @@ SELECT
     created_at
 FROM public.car_quotes
 WHERE is_public = TRUE;
+
+-- ============================================================================
+-- 9. Table & Schema Grants for Supabase Roles (anon & authenticated)
+-- ============================================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON public.car_quotes TO anon;
+GRANT SELECT ON public.quote_freebies TO anon;
+GRANT SELECT ON public.public_quotes_view TO anon, authenticated;
+GRANT ALL ON public.car_quotes TO authenticated;
+GRANT ALL ON public.quote_freebies TO authenticated;

@@ -274,7 +274,11 @@ export function QuotesProvider({ children }: { children: React.ReactNode }) {
         error.message?.includes("relation")
       ) {
         setDbError(
-          "ยังไม่ได้สร้างตารางในฐานข้อมูล Supabase กรุณานำโค้ดในไฟล์ supabase/schema.sql ไปรันใน Supabase SQL Editor (ระหว่างนี้ข้อมูลของคุณถูกบันทึกไว้ในเบราว์เซอร์เครื่องนี้เรียบร้อยแล้ว)"
+          "ยังไม่ได้สร้างตารางในฐานข้อมูล Supabase กรุณานำโค้ดในไฟล์ supabase/schema.sql ไปรันใน Supabase SQL Editor"
+        );
+      } else if (error.code === "42501") {
+        setDbError(
+          "ตารางใน Supabase ยังไม่ได้เปิดสิทธิ์ GRANT ให้ผู้ใช้เข้าถึง กรุณารันคำสั่ง GRANT ใน Supabase SQL Editor"
         );
       } else {
         setDbError(error.message);
